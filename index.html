@@ -1,0 +1,3062 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta name="theme-color" content="#667eea">
+    <meta name="description" content="日本語と中国語の詩歌集アプリ">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <title>詩歌集</title>
+    <style>
+        @font-face {
+            font-family: 'GlowSans Compressed';
+            src: url('fonts/GlowSansSC-Compressed-Light.otf') format('opentype');
+            font-weight: 300;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'GlowSans Compressed';
+            src: url('fonts/GlowSansSC-Compressed-Regular.otf') format('opentype');
+            font-weight: 400;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'GlowSans Compressed';
+            src: url('fonts/GlowSansSC-Compressed-Medium.otf') format('opentype');
+            font-weight: 500;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'GlowSans Normal';
+            src: url('fonts/GlowSansSC-Normal-Light.otf') format('opentype');
+            font-weight: 300;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'GlowSans Normal';
+            src: url('fonts/GlowSansSC-Normal-Regular.otf') format('opentype');
+            font-weight: 400;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'GlowSans Normal';
+            src: url('fonts/GlowSansSC-Normal-Medium.otf') format('opentype');
+            font-weight: 500;
+            font-style: normal;
+        }
+
+        :root {
+            --font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Yu Gothic', 'YuGothic', Meiryo, 'MS Gothic', sans-serif;
+            --font-weight: 400;
+            --font-size: 1em;
+            --stanza-line-height: 1.6;
+            --stanza-margin-bottom: 12px;
+            --letter-spacing: 0em;
+            --menu-opacity: 1.0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* ダブルタップズームを阻止 */
+        button, a, input, .nav-button, .font-option, .sidebar-toggle, 
+        .hymn-item, .toolbar-toggle, .font-settings-button {
+            touch-action: manipulation;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+        
+        /* Windows用オーバーレイスクロールバー */
+        .content {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+        }
+        
+        .content::-webkit-scrollbar {
+            width: 6px;
+            background: transparent;
+        }
+        
+        .content::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 3px;
+        }
+        
+        .content::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, 0.4);
+        }
+        
+        .content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        body {
+            font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Yu Gothic', 'YuGothic', Meiryo, 'MS Gothic', sans-serif;
+            background: white;
+            min-height: 100vh;
+            padding-top: 0;
+            padding-bottom: 0;
+            transition: padding 0.3s ease;
+            width: 100%;
+            max-width: 100vw; 
+        }
+
+        /* フルスクリーンモード */
+        body.fullscreen-mode {
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+
+        body.fullscreen-mode .header,
+        body.fullscreen-mode .footer,
+        body.fullscreen-mode .sidebar {
+            display: none !important;
+        }
+
+        body.fullscreen-mode .container {
+            min-height: 100vh;
+        }
+
+        body.fullscreen-mode .content {
+            max-height: 100vh;
+        }
+
+        /* ツールバートグルボタン */
+        /* ツールバートグルボタン：vpの最下部を基準に固定位置（フッター高さ+α） */
+        .toolbar-toggle {
+            position: fixed;
+            bottom: 16px;
+            right: 16px;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #495057;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1001;
+            transition: all 0.2s ease;
+        }
+
+        .toolbar-toggle:hover {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            transform: scale(1.05);
+        }
+
+
+        /* ツールバー非表示時のアイコン（斜め線付き） */
+        .toolbar-icon-hidden {
+            position: relative;
+            display: inline-block;
+            color: #bbb; /* 3本線を薄いグレーに */
+        }
+        .toolbar-icon-hidden::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: -2px;
+            right: -2px;
+            height: 2px;
+            background: #888; /* 斜め線をミドルグレーに */
+            transform: rotate(-45deg);
+        }
+
+        .header {
+            position: fixed;
+            bottom: 62px;
+            right: 16px;
+            left: auto;
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            z-index: 1000;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            pointer-events: none; /* ボタン以外はクリックを通過させる */
+        }
+        
+        .header > * {
+            pointer-events: auto; /* ボタンはクリック可能に */
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            right: auto;
+            margin: 0;
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            z-index: 1000;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            pointer-events: none; /* ボタン以外はクリックを通過させる */
+        }
+        
+        .footer > * {
+            pointer-events: auto; /* ボタンはクリック可能に */
+        }
+
+        .footer-search {
+            flex: 0 1 auto;
+            max-width: 300px;
+            min-width: 120px;
+        }
+
+        .footer-search input {
+            width: 100%;
+            height: 36px;
+            padding: 0 12px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 20px;
+            font-size: 16px;
+            transition: all 0.2s ease;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            box-sizing: border-box;
+        }
+
+        .footer-search input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .footer-nav {
+            display: flex;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+
+        .footer-toggle {
+            background: rgba(255, 255, 255, 0.95);
+            color: #495057;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 18px;
+            padding: 2px 10px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            height: 36px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            margin-right: 6px;
+            position: relative;
+        }
+
+        .footer-toggle:hover {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .footer-toggle.collapsed::before {
+            content: "▶";
+            font-size: 0.9em;
+            line-height: 1;
+        }
+
+        .footer-toggle:not(.collapsed)::before {
+            content: "◀";
+            font-size: 0.9em;
+            line-height: 1;
+        }
+
+        .footer-toggle::after {
+            content: "(R)";
+            font-size: 0.7em;
+            line-height: 1;
+            opacity: 0.8;
+        }
+
+        .utayaku-toggle,
+        .zennyaku-toggle,
+        .chinese-toggle,
+        .english-toggle {
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 3px 6px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            min-width: 60px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 4px;
+            font-weight: 500;
+        }
+
+        /* メニュー内のボタンスタイル */
+        .font-settings-menu .utayaku-toggle,
+        .font-settings-menu .zennyaku-toggle,
+        .font-settings-menu .chinese-toggle,
+        .font-settings-menu .english-toggle {
+            margin-right: 0;
+            min-width: auto;
+        }
+
+        .utayaku-toggle:hover,
+        .zennyaku-toggle:hover,
+        .chinese-toggle:hover,
+        .english-toggle:hover {
+            background: #5a6268;
+        }
+
+        .utayaku-toggle.active,
+        .zennyaku-toggle.active,
+        .chinese-toggle.active,
+        .english-toggle.active {
+            background: #28a745;
+            box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+        }
+
+        .english-toggle:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .font-settings-button {
+            background: rgba(255, 255, 255, 0.9);
+            color: #495057;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.1em;
+            padding: 0;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .font-settings-button:hover {
+            color: #667eea;
+            background: rgba(255, 255, 255, 1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .font-settings-menu {
+            position: fixed;
+            bottom: 16px;
+            right: 64px;
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 12px;
+            min-width: 260px;
+            z-index: 2000;
+            display: none;
+            opacity: var(--menu-opacity);
+        }
+
+        .font-settings-menu.show {
+            display: block;
+        }
+
+        .font-settings-group {
+            margin-bottom: 10px;
+        }
+
+        .font-settings-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .font-settings-label {
+            font-size: 0.7em;
+            color: #495057;
+            margin-bottom: 4px;
+            display: block;
+            font-weight: 500;
+        }
+
+        .font-settings-options {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .font-option {
+            padding: 3px 6px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.7em;
+            transition: all 0.2s ease;
+            flex: 1;
+            min-width: 50px;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .font-option:hover {
+            background: #f8f9fa;
+            border-color: #667eea;
+        }
+
+        .font-option.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        /* スライダー行：ラベル・スライダー・値を横並び */
+        .font-settings-slider-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .font-settings-slider-row .font-settings-label {
+            margin-bottom: 0;
+            min-width: 60px;
+            flex-shrink: 0;
+        }
+
+        .font-settings-slider {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .font-settings-value {
+            font-size: 0.7em;
+            color: #6c757d;
+            min-width: 32px;
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        /* ショートカット一覧スタイル */
+        .shortcut-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .shortcut-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.75em;
+        }
+
+        .shortcut-key {
+            background: #e9ecef;
+            color: #495057;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-weight: 600;
+            min-width: 36px;
+            text-align: center;
+            border: 1px solid #dee2e6;
+        }
+
+        .shortcut-desc {
+            color: #495057;
+        }
+
+        .header-toggle {
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 2px 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            min-width: 32px;
+            height: 36px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-right: 6px;
+            position: relative;
+        }
+
+        .header-toggle:hover {
+            background: #764ba2;
+        }
+
+        .header-toggle.collapsed::before {
+            content: "▶";
+            font-size: 0.9em;
+            line-height: 1;
+        }
+
+        .header-toggle:not(.collapsed)::before {
+            content: "◀";
+            font-size: 0.9em;
+            line-height: 1;
+        }
+
+        .header-toggle::after {
+            content: "Esc";
+            font-size: 0.6em;
+            line-height: 1;
+            margin-top: 2px;
+            opacity: 0.8;
+        }
+
+        .container {
+            width: 100%;
+            margin: 0;
+            margin-top: 0;
+            background: white;
+            border-radius: 0;
+            box-shadow: none;
+            overflow: hidden;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: #f8f9fa;
+            border-right: 1px solid #e9ecef;
+            padding: 10px;
+            overflow-y: auto;
+            max-height: calc(100vh - 50px);
+            transition: width 0.3s ease, padding 0.3s ease;
+        }
+
+        .sidebar.collapsed {
+            width: 0;
+            padding: 0;
+            overflow: hidden;
+            border-right: none;
+        }
+
+        .sidebar-header {
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #667eea;
+        }
+
+        .sidebar h2 {
+            color: #495057;
+            font-size: 1.1em;
+            text-align: center;
+            margin: 0;
+        }
+
+        .hymn-list-container {
+            transition: opacity 0.3s ease;
+        }
+
+        .sidebar.collapsed .hymn-list-container {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .hymn-list {
+            list-style: none;
+        }
+
+        .hymn-list li {
+            margin-bottom: 3px;
+        }
+
+        .hymn-link {
+            display: block;
+            padding: 4px 8px;
+            color: #495057;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            border-left: 2px solid transparent;
+            font-size: 0.75em;
+            cursor: pointer;
+        }
+
+        .hymn-link-preview {
+            font-size: 0.7em;
+            color: #6c757d;
+            margin-top: 2px;
+            font-style: normal;
+            padding-left: 2em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .hymn-link:hover {
+            background: #e9ecef;
+            border-left-color: #667eea;
+            transform: translateX(2px);
+        }
+
+        .hymn-link.active {
+            background: #667eea;
+            color: white;
+            border-left-color: #764ba2;
+            font-weight: bold;
+        }
+
+        .hymn-link.active .hymn-link-preview {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .content {
+            flex: 1;
+            padding: 12px;
+            padding-top: 8px;
+            overflow-x: hidden;
+            overflow-y: auto;
+            max-height: 100vh;
+            font-family: var(--font-family);
+            font-weight: var(--font-weight);
+            font-size: var(--font-size);
+        }
+
+        .hymn-header {
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .hymn-number {
+            font-size: 1.3em;
+            color: #667eea;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .hymn-title {
+            font-size: 1.1em;
+            color: #212529;
+            line-height: 1.4;
+        }
+
+        .hymn-stanzas {
+            margin-top: 12px;
+            overflow-x: hidden;
+            width: 100%;
+        }
+
+        .stanza {
+            margin-bottom: var(--stanza-margin-bottom);
+            overflow-x: hidden;
+        }
+
+        .stanza-content {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .stanza-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0;
+            overflow-x: hidden;
+            width: 100%;
+        }
+
+        /* ===== 訳本共通スタイル ===== */
+        .stanza-utayaku,
+        .stanza-zennyaku,
+        .stanza-chinese,
+        .stanza-english {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            flex: 1;
+            min-width: 0;
+            flex-shrink: 1;
+        }
+
+        /* プレースホルダー（節がない場合のスペース確保） */
+        .stanza-placeholder {
+            visibility: hidden;
+            min-height: 1em;
+        }
+
+        /* ===== 主要言語スタイル ===== */
+        .stanza-primary .stanza-number {
+            display: block;
+            font-size: 0.9em;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .stanza-primary .stanza-lines {
+            color: #212529;
+        }
+
+        /* ===== 付随言語スタイル ===== */
+        .stanza-secondary .stanza-number {
+            display: none;
+        }
+
+        /* ========================================
+           縦並びレイアウト（デフォルト）
+           ======================================== */
+        
+        /* 縦並び時の付随言語 */
+        .stanza-secondary {
+            margin-left: calc(1.5em + 8px);
+            padding-top: 6px;
+            border-top: 1px dashed #ccc;
+            box-sizing: border-box;
+            max-width: calc(100% - 1.5em - 8px);
+        }
+
+        .stanza-primary + .stanza-secondary {
+            margin-top: 4px;
+        }
+
+        .stanza-secondary + .stanza-secondary {
+            margin-top: 4px;
+        }
+
+        .stanza-secondary .stanza-lines {
+            padding-left: 1em;
+            line-height: var(--stanza-line-height);
+            /* 縦並び時：ダークグレー、フォント1段階小さく */
+            color: #555;
+            font-size: 0.95em;
+        }
+
+        /* ========================================
+           横並びレイアウト
+           ======================================== */
+
+        /* 横並び時の付随言語（フォントは主要言語と同じ） */
+        .is-horizontal .stanza-secondary {
+            margin-left: 0;
+            padding-top: 0;
+            border-top: none;
+            }
+
+        .is-horizontal .stanza-secondary .stanza-number {
+            display: block;
+            color: #bbb;
+        }
+
+        .is-horizontal .stanza-secondary .stanza-lines {
+                padding-left: 0;
+            color: #212529;
+            font-size: 1.1em; /* 主要訳本と同じサイズ */
+        }
+
+        .is-horizontal .stanza-primary + .stanza-secondary,
+        .is-horizontal .stanza-secondary + .stanza-secondary {
+            margin-top: 0;
+        }
+
+        .is-horizontal .stanza-wrapper {
+            flex-direction: row;
+                align-items: flex-start;
+            gap: 16px;
+            }
+
+        /* ===== 自動レイアウト（レスポンシブ） ===== */
+        /* PC: JSでis-horizontalクラスを追加して横並びスタイルを適用 */
+        /* モバイル: 縦並び（auto-layoutの場合） */
+        @media (max-width: 768px) {
+            body.auto-layout .stanza-utayaku,
+            body.auto-layout .stanza-zennyaku,
+            body.auto-layout .stanza-chinese,
+            body.auto-layout .stanza-english {
+                width: 100%;
+            }
+
+            body.auto-layout .stanza-secondary {
+                padding-bottom: 4px;
+                padding-right: 8px;
+            }
+
+            /* 縦並び時は余白最適化ボタンを非表示 */
+            body.auto-layout #optimizeButton {
+                display: none;
+            }
+            }
+
+        /* ===== 強制横並びレイアウト ===== */
+        body.horizontal-layout .stanza-wrapper {
+            flex-direction: row;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        body.horizontal-layout .stanza-secondary {
+            margin-left: 0;
+            padding-top: 0;
+            border-top: none;
+        }
+
+        body.horizontal-layout .stanza-secondary .stanza-number {
+            display: block;
+            color: #bbb;
+        }
+
+        body.horizontal-layout .stanza-secondary .stanza-lines {
+            padding-left: 0;
+            color: #212529;
+            font-size: 1.1em; /* 主要訳本と同じサイズ */
+        }
+
+        body.horizontal-layout .stanza-primary + .stanza-secondary,
+        body.horizontal-layout .stanza-secondary + .stanza-secondary {
+            margin-top: 0;
+            }
+
+        /* ===== 強制縦並びレイアウト ===== */
+        body.vertical-layout .stanza-wrapper {
+            flex-direction: column;
+            gap: 0;
+            }
+
+        body.vertical-layout .stanza-utayaku,
+        body.vertical-layout .stanza-zennyaku,
+        body.vertical-layout .stanza-chinese,
+        body.vertical-layout .stanza-english {
+            width: 100%;
+        }
+
+        body.vertical-layout .stanza-secondary {
+            margin-left: calc(1.5em + 8px);
+            padding-top: 6px;
+            border-top: 1px dashed #ccc;
+                padding-bottom: 4px;
+            box-sizing: border-box;
+            max-width: calc(100% - 1.5em - 8px);
+        }
+
+        body.vertical-layout .stanza-secondary .stanza-number {
+            display: none;
+        }
+
+        body.vertical-layout .stanza-secondary .stanza-lines {
+                padding-left: 1em;
+            color: #555;
+            font-size: 0.95em;
+            }
+
+        /* 縦並び時は余白最適化ボタンを非表示 */
+        body.vertical-layout #optimizeButton {
+            display: none;
+            }
+
+        body.vertical-layout .stanza-primary + .stanza-secondary,
+        body.vertical-layout .stanza-secondary + .stanza-secondary {
+            margin-top: 4px;
+        }
+
+        .stanza-number {
+            font-size: 0.9em;
+            color: #667eea;
+            font-weight: bold;
+            text-transform: capitalize;
+            min-width: 1.5em;
+            flex-shrink: 0;
+            padding-top: 2px;
+            text-align: right;
+            padding-right: 8px;
+        }
+
+        .stanza-lines {
+            font-size: 1.1em;
+            line-height: var(--stanza-line-height);
+            letter-spacing: var(--letter-spacing);
+            color: #212529;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .stanza-line {
+            margin-bottom: 4px;
+            white-space: pre-wrap;
+        }
+
+        .nav-button {
+            height: 36px;
+            padding: 0 12px;
+            background: rgba(255, 255, 255, 0.95);
+            color: #495057;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 20px;
+            font-size: 0.75em;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            white-space: nowrap;
+            box-sizing: border-box;
+        }
+
+        .nav-button:hover {
+            background: white;
+            color: #667eea;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        .nav-button:disabled {
+            background: #adb5bd;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .nav-button.prev::before {
+            content: "← ";
+        }
+
+        .nav-button.next::after {
+            content: " →";
+        }
+
+        @media (max-width: 480px) {
+            .header {
+                bottom: 64px;
+                right: 14px;
+                gap: 3px;
+            }
+
+            .footer-toggle {
+                height: 32px;
+                padding: 2px 8px;
+            }
+
+            .footer-search input {
+                height: 32px;
+                padding: 0 8px;
+                font-size: 16px;
+            }
+
+            .nav-button {
+                height: 32px;
+                padding: 0 8px;
+                min-width: 32px;
+            }
+
+            .nav-button.prev::before,
+            .nav-button.next::after {
+                font-size: 0.9em;
+            }
+
+            .header-toggle {
+                min-width: 28px;
+                height: 24px;
+                padding: 3px 6px;
+                font-size: 0.8em;
+                margin-right: 3px;
+            }
+
+            .utayaku-toggle,
+            .zennyaku-toggle,
+            .chinese-toggle,
+            .english-toggle {
+                min-width: 50px;
+                height: 24px;
+                padding: 3px 6px;
+                font-size: 0.75em;
+                margin-right: 3px;
+            }
+            
+
+            .font-settings-menu {
+                right: 66px;
+                left: auto;
+                bottom: 14px;
+                min-width: auto;
+                max-width: calc(100vw - 74px);
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding-top: 0;
+                padding-bottom: 0;
+            }
+
+            .header {
+                bottom: 64px;
+                right: 14px;
+                gap: 4px;
+            }
+            
+            .font-settings-button {
+                width: 44px;
+                height: 44px;
+                font-size: 1em;
+            }
+            
+            .toolbar-toggle {
+                width: 44px;
+                height: 44px;
+                bottom: 14px;
+                right: 14px;
+            }
+
+            .footer-search {
+                flex: 1.5 1 auto;
+                max-width: none;
+                min-width: 0;
+            }
+
+            .footer-search input {
+                height: 32px;
+                padding: 0 8px;
+                font-size: 16px;
+            }
+
+            .footer-nav {
+                gap: 3px;
+            }
+
+            .nav-button {
+                height: 32px;
+                padding: 0 8px;
+                font-size: 0.7em;
+                position: relative;
+                overflow: hidden;
+                text-indent: -9999px;
+            }
+
+            .nav-button.prev::before {
+                content: "←";
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%);
+                text-indent: 0;
+                font-size: 1em;
+            }
+
+            .nav-button.next::after {
+                content: "→";
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%);
+                text-indent: 0;
+                font-size: 1em;
+            }
+        }
+
+        /* Larger styles for 481px-768px range */
+        @media (min-width: 481px) and (max-width: 768px) {
+            body {
+                padding-top: 0;
+            }
+
+            .header {
+                bottom: 64px;
+                right: 14px;
+                gap: 8px;
+            }
+
+            .footer-search input {
+                height: 32px;
+                padding: 0 10px;
+                font-size: 16px;
+            }
+
+            .footer-nav {
+                gap: 6px;
+            }
+
+            .nav-button {
+                height: 32px;
+                padding: 0 12px;
+                font-size: 0.85em;
+                text-indent: 0;
+                overflow: visible;
+                position: static;
+            }
+
+            .nav-button.prev::before {
+                content: "← ";
+                position: static;
+                transform: none;
+            }
+
+            .nav-button.next::after {
+                content: " →";
+                position: static;
+                transform: none;
+            }
+
+            .footer-toggle {
+                height: 32px;
+                padding: 2px 8px;
+                margin-right: 6px;
+            }
+            
+            .footer-toggle::after {
+                font-size: 0.6em;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .content {
+                order: 1;
+                padding: 10px;
+            }
+
+            .sidebar {
+                position: fixed;
+                bottom: 42px;
+                left: 0;
+                right: 0;
+                width: 100%;
+                max-height: 150px;
+                z-index: 999;
+                border-right: none;
+                border-top: none;
+                box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+            }
+
+            .sidebar.collapsed {
+                width: 100%;
+                max-height: 0;
+                padding: 0;
+                overflow: hidden;
+            }
+
+            /* Change icon to up/down triangle for mobile */
+            .footer-toggle.collapsed::before {
+                content: "▼";
+            }
+
+            .footer-toggle:not(.collapsed)::before {
+                content: "▲";
+            }
+
+            .hymn-number {
+                font-size: 1.1em;
+            }
+
+            .hymn-title {
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <button class="font-settings-button" id="infoButton" onclick="toggleInfoPopup()" title="ショートカット一覧 (I)">ⓘ</button>
+        <button class="font-settings-button" id="optimizeButton" onclick="optimizeTranslationWidths()" title="余白最適化 (O)">⇔</button>
+        <button class="font-settings-button" id="fontSettingsButton" onclick="toggleFontSettings()" title="フォント設定 (F)">Aa</button>
+        <button class="font-settings-button" id="languageButton" onclick="toggleLanguageMenu()" title="言語メニュー (L)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+            </svg>
+        </button>
+    </div>
+
+    <!-- ツールバートグルボタン -->
+    <button class="toolbar-toggle" id="toolbarToggle" onclick="toggleToolbar()" title="ツールバー非表示 (T)">
+        <span id="toolbarIcon">☰</span>
+    </button>
+
+    <!-- フォント設定メニュー -->
+    <div class="font-settings-menu" id="fontSettingsMenu">
+        <div class="font-settings-group">
+            <label class="font-settings-label">フォント</label>
+            <div class="font-settings-options">
+                <button class="font-option" data-font="hei" onclick="setFont('hei')">ゴシック</button>
+                <button class="font-option" data-font="xi" onclick="setFont('xi')">細長</button>
+                <button class="font-option" data-font="ming" onclick="setFont('ming')">明朝</button>
+            </div>
+        </div>
+        
+        <div class="font-settings-group font-settings-slider-row">
+            <label class="font-settings-label">字間</label>
+            <input type="range" class="font-settings-slider" id="letterSpacing" min="-0.15" max="0.2" step="0.01" value="0" oninput="setLetterSpacing(this.value)">
+            <div class="font-settings-value" id="letterSpacingValue">0</div>
+        </div>
+        
+        <div class="font-settings-group font-settings-slider-row">
+            <label class="font-settings-label">行間</label>
+            <input type="range" class="font-settings-slider" id="stanzaLineHeight" min="1.0" max="2.5" step="0.1" value="1.6" oninput="setStanzaLineHeight(this.value)">
+            <div class="font-settings-value" id="stanzaLineHeightValue">1.6</div>
+        </div>
+        
+        <div class="font-settings-group font-settings-slider-row">
+            <label class="font-settings-label">節間</label>
+            <input type="range" class="font-settings-slider" id="stanzaMargin" min="4" max="24" step="2" value="12" oninput="setStanzaMargin(this.value)">
+            <div class="font-settings-value" id="stanzaMarginValue">12px</div>
+        </div>
+        
+        <div class="font-settings-group font-settings-slider-row">
+            <label class="font-settings-label">サイズ</label>
+            <input type="range" class="font-settings-slider" id="fontSize" min="0.8" max="2.5" step="0.05" value="1.1" oninput="setFontSize(this.value)" title="フォントサイズ (↑↓で調整)">
+            <div class="font-settings-value" id="fontSizeValue">110%</div>
+        </div>
+        
+        <div class="font-settings-group">
+            <label class="font-settings-label">ウェイト</label>
+            <div class="font-settings-options">
+                <button class="font-option" data-weight="light" onclick="setFontWeight('light')" title="細いウェイト (Wで切替)">細</button>
+                <button class="font-option" data-weight="regular" onclick="setFontWeight('regular')" title="中ウェイト (Wで切替)">中</button>
+                <button class="font-option" data-weight="medium" onclick="setFontWeight('medium')" title="太いウェイト (Wで切替)">太</button>
+            </div>
+        </div>
+        
+        <div class="font-settings-group">
+            <label class="font-settings-label">透明度</label>
+            <div class="font-settings-options">
+                <button class="font-option" data-opacity="0.8" onclick="setOpacity(0.8)">80%</button>
+                <button class="font-option" data-opacity="0.9" onclick="setOpacity(0.9)">90%</button>
+                <button class="font-option" data-opacity="1.0" onclick="setOpacity(1.0)">100%</button>
+            </div>
+        </div>
+        
+        <div class="font-settings-group">
+            <label class="font-settings-label">レイアウト (L)</label>
+            <div class="font-settings-options">
+                <button class="font-option" id="layoutAuto" data-layout="auto" onclick="setLayout('auto')" title="自動レイアウト (Lで切替)">自動</button>
+                <button class="font-option" id="layoutVertical" data-layout="vertical" onclick="setLayout('vertical')" title="縦並びレイアウト (Lで切替)">縦</button>
+                <button class="font-option" id="layoutHorizontal" data-layout="horizontal" onclick="setLayout('horizontal')" title="横並びレイアウト (Lで切替)">横</button>
+            </div>
+        </div>
+        
+        <div class="font-settings-group font-settings-slider-row">
+            <label class="font-settings-label">左右余白</label>
+            <input type="range" class="font-settings-slider" id="contentPadding" min="0" max="96" step="2" value="0" oninput="setContentPadding(this.value)">
+            <div class="font-settings-value" id="contentPaddingValue">0px</div>
+        </div>
+        
+        <div class="font-settings-group" style="border-top: 1px solid #e9ecef; margin-top: 12px; padding-top: 12px;">
+            <div class="font-settings-options" style="flex-direction: column; gap: 8px;">
+                <button class="font-option" onclick="resetFontSettings()" style="width: 100%; background: #6c757d; color: white;">リセット</button>
+                <button class="font-option" onclick="resetAppCache()" style="width: 100%; background: #dc3545; color: white;">キャッシュ削除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 言語選択メニュー -->
+    <div class="font-settings-menu" id="languageMenu">
+        <div class="font-settings-group">
+            <label class="font-settings-label">言語</label>
+            <div class="font-settings-options">
+                <button class="font-option" id="langJapanese" onclick="setPrimaryLanguage('japanese')">日本語</button>
+                <button class="font-option" id="langChinese" onclick="setPrimaryLanguage('chinese')">中文</button>
+                <button class="font-option" id="langEnglish" onclick="setPrimaryLanguage('english')">English</button>
+            </div>
+        </div>
+        
+        <div class="font-settings-group" style="border-top: 1px solid #e9ecef; margin-top: 12px; padding-top: 12px;">
+            <label class="font-settings-label">表示言語</label>
+            <div class="font-settings-options">
+                <button class="utayaku-toggle" id="utayakuToggle" onclick="toggleUtayaku()" title="歌訳の表示/非表示 (J)">歌訳 (J)</button>
+                <button class="zennyaku-toggle" id="zennyakuToggle" onclick="toggleZennyaku()" title="全訳の表示/非表示 (Z)">全訳 (Z)</button>
+                <button class="chinese-toggle" id="chineseToggle" onclick="toggleChinese()" title="中文の表示/非表示 (C)">中文 (C)</button>
+                <button class="english-toggle" id="englishToggle" onclick="toggleEnglish()" title="Englishの表示/非表示 (E)" disabled>English (E)</button>
+        </div>
+    </div>
+
+        <!-- PWA設定を追加 -->
+        <div class="font-settings-group" style="border-top: 1px solid #e9ecef; margin-top: 12px; padding-top: 12px;">
+            <label class="font-settings-label">PWA設定</label>
+            <div id="installPromptContainer" style="display: none; margin-bottom: 8px;">
+                <div style="font-size: 0.75em; color: #6c757d; margin-bottom: 8px; padding: 8px; background: #f8f9fa; border-radius: 4px; position: relative;">
+                    <button onclick="dismissInstallPrompt()" style="position: absolute; top: 4px; right: 4px; background: none; border: none; color: #6c757d; font-size: 1.2em; cursor: pointer; padding: 0 4px; line-height: 1;" title="閉じる">×</button>
+                    <div id="installPromptMessage"></div>
+                </div>
+                <div style="display: flex; gap: 4px;">
+                    <button class="font-option" id="installButton" onclick="showInstallPrompt()" style="flex: 1; background: #667eea; color: white; display: none;">ホーム画面に追加</button>
+                    <button class="font-option" onclick="dismissInstallPrompt()" style="flex: 0 0 auto; background: #6c757d; color: white; padding: 0 12px;" title="後で">後で</button>
+                </div>
+            </div>
+            <div id="platformInstructions" style="display: none; font-size: 0.7em; color: #6c757d; margin-bottom: 8px; padding: 8px; background: #e7f3ff; border-radius: 4px; line-height: 1.6; position: relative;">
+                <button onclick="dismissInstallPrompt()" style="position: absolute; top: 4px; right: 4px; background: none; border: none; color: #6c757d; font-size: 1.2em; cursor: pointer; padding: 0 4px; line-height: 1;" title="閉じる">×</button>
+                <div id="platformInstructionsContent"></div>
+            </div>
+            <div class="font-settings-options" style="flex-direction: column; gap: 8px;">
+                <button class="font-option" id="enablePWAButton" onclick="enablePWA()" style="width: 100%;">PWAを有効化</button>
+                <button class="font-option" id="resetCacheButton" onclick="resetCache()" style="width: 100%; background: #dc3545; color: white;">Reset Cache</button>
+            </div>
+            <div id="pwaStatus" style="margin-top: 8px; font-size: 0.75em; color: #6c757d;"></div>
+        </div>
+    </div>
+
+
+    <!-- ショートカット情報ポップアップ -->
+    <div class="font-settings-menu" id="infoPopup">
+        <div class="font-settings-group">
+            <label class="font-settings-label" style="font-size: 0.85em; margin-bottom: 12px;">キーボードショートカット</label>
+            <div class="shortcut-list">
+                <div class="shortcut-item"><span class="shortcut-key">←</span><span class="shortcut-desc">前の詩歌</span></div>
+                <div class="shortcut-item"><span class="shortcut-key">→</span><span class="shortcut-desc">次の詩歌</span></div>
+                <div class="shortcut-item"><span class="shortcut-key">J</span><span class="shortcut-desc">歌訳の表示/非表示</span></div>
+                <div class="shortcut-item"><span class="shortcut-key">Z</span><span class="shortcut-desc">全訳の表示/非表示</span></div>
+                <div class="shortcut-item"><span class="shortcut-key">C</span><span class="shortcut-desc">中文の表示/非表示</span></div>
+                <div class="shortcut-item"><span class="shortcut-key">L</span><span class="shortcut-desc">言語メニューの開閉</span></div>
+                <div class="shortcut-item"><span class="shortcut-key">O</span><span class="shortcut-desc">余白最適化</span></div>
+                <div class="shortcut-item"><span class="shortcut-key">S</span><span class="shortcut-desc">検索欄に移動</span></div>
+                <div class="shortcut-item"><span class="shortcut-key">R</span><span class="shortcut-desc">検索結果(Result)の開閉</span></div>
+                <div class="shortcut-item"><span class="shortcut-key">↑</span><span class="shortcut-desc">フォント拡大</span></div>
+                <div class="shortcut-item"><span class="shortcut-key">↓</span><span class="shortcut-desc">フォント縮小</span></div>
+                <div class="shortcut-item"><span class="shortcut-key">F</span><span class="shortcut-desc">フォント設定メニューの開閉</span></div>
+                <div class="shortcut-item"><span class="shortcut-key">W</span><span class="shortcut-desc">フォントウェイト切替</span></div>
+                <div class="shortcut-item"><span class="shortcut-key">T</span><span class="shortcut-desc">ツールバー表示/非表示</span></div>
+                <div class="shortcut-item"><span class="shortcut-key">I</span><span class="shortcut-desc">本メニューの開閉</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <button class="footer-toggle collapsed" id="footerToggle" onclick="toggleSidebar()" title="検索結果を開く (R)"></button>
+        <div class="footer-search">
+            <input type="text" id="search" placeholder="検索(S)...">
+        </div>
+        <div class="footer-nav">
+            <button class="nav-button prev" id="prevButton" onclick="navigateHymn(-1)" title="前の詩歌 (←)">前の詩歌</button>
+            <button class="nav-button next" id="nextButton" onclick="navigateHymn(1)" title="次の詩歌 (→)">次の詩歌</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="sidebar collapsed" id="sidebar">
+            <div class="sidebar-header">
+                <h2>検索結果</h2>
+            </div>
+            <div class="hymn-list-container">
+                <ul class="hymn-list" id="hymnList"></ul>
+            </div>
+        </div>
+        <div class="content" id="content">
+            <div class="hymn-header">
+                <div class="hymn-number" id="hymnNumber">読み込み中...</div>
+                <div class="hymn-title" id="hymnTitle"></div>
+            </div>
+            <div class="hymn-stanzas" id="hymnStanzas"></div>
+        </div>
+    </div>
+
+
+    <script>
+        let hymns = [];
+        let chineseHymns = [];
+        let currentHymnIndex = 0;
+        let showZennyaku = true;
+        let showChinese = true;
+        let showUtayaku = true;
+        let primaryLanguage = localStorage.getItem('primaryLanguage') || 'japanese'; // japanese, chinese, english
+
+        // Load hymns data with offline support
+        async function loadHymnsData() {
+            try {
+                const [utayakuResponse, zennyakuResponse, chineseResponse, supUtayakuResponse, supZennyakuResponse] = await Promise.all([
+                    fetch('json-data-set/jp-dai-uta-web.json').catch(err => {
+                        console.warn('Failed to fetch jp-dai-uta-web.json, trying cache:', err);
+                        return caches.match('json-data-set/jp-dai-uta-web.json');
+                    }),
+                    fetch('json-data-set/jp-dai-zen-web.json').catch(err => {
+                        console.warn('Failed to fetch jp-dai-zen-web.json, trying cache:', err);
+                        return caches.match('json-data-set/jp-dai-zen-web.json');
+                    }),
+                    fetch('json-data-set/ch-dai-web.json').catch(err => {
+                        console.warn('Failed to fetch ch-dai-web.json, trying cache:', err);
+                        return caches.match('json-data-set/ch-dai-web.json');
+                    }),
+                    fetch('json-data-set/jp-sup-uta-web.json').catch(err => {
+                        console.warn('Failed to fetch jp-sup-uta-web.json, trying cache:', err);
+                        return caches.match('json-data-set/jp-sup-uta-web.json');
+                    }),
+                    fetch('json-data-set/jp-sup-zen-web.json').catch(err => {
+                        console.warn('Failed to fetch jp-sup-zen-web.json, trying cache:', err);
+                        return caches.match('json-data-set/jp-sup-zen-web.json');
+                    })
+                ]);
+
+                if (!utayakuResponse || !utayakuResponse.ok) {
+                    throw new Error('Failed to load utayaku data');
+                }
+                if (!zennyakuResponse || !zennyakuResponse.ok) {
+                    throw new Error('Failed to load zennyaku data');
+                }
+                if (!chineseResponse || !chineseResponse.ok) {
+                    throw new Error('Failed to load Chinese hymns data');
+                }
+                if (!supUtayakuResponse || !supUtayakuResponse.ok) {
+                    throw new Error('Failed to load supplement utayaku data');
+                }
+                if (!supZennyakuResponse || !supZennyakuResponse.ok) {
+                    throw new Error('Failed to load supplement zennyaku data');
+                }
+
+                const [utayakuData, zennyakuData, chineseData, supUtayakuData, supZennyakuData] = await Promise.all([
+                    utayakuResponse.json(),
+                    zennyakuResponse.json(),
+                    chineseResponse.json(),
+                    supUtayakuResponse.json(),
+                    supZennyakuResponse.json()
+                ]);
+
+                // Merge utayaku and zennyaku by hymn number
+                const zennyakuMap = new Map();
+                zennyakuData.forEach(hymn => {
+                    zennyakuMap.set(hymn.number, hymn);
+                });
+
+                const hymnsDai = utayakuData.map(utaHymn => {
+                    const zenHymn = zennyakuMap.get(utaHymn.number);
+                    return {
+                        number: utaHymn.number,
+                        id: utaHymn.id,
+                        title: utaHymn.title,
+                        utayaku: utaHymn.lyrics || [],
+                        zennyaku: zenHymn ? (zenHymn.lyrics || []) : []
+                    };
+                });
+
+                // Supplement (補充本): JP only.番号が大本と衝突するので、別Mapで結合してから配列に追加する
+                const supZenMap = new Map();
+                supZennyakuData.forEach(hymn => {
+                    supZenMap.set(hymn.number, hymn);
+                });
+
+                const hymnsSup = supUtayakuData.map(utaHymn => {
+                    const zenHymn = supZenMap.get(utaHymn.number);
+                    return {
+                        number: utaHymn.number,
+                        id: utaHymn.id,
+                        title: utaHymn.title,
+                        utayaku: utaHymn.lyrics || [],
+                        zennyaku: zenHymn ? (zenHymn.lyrics || []) : []
+                    };
+                });
+
+                // Combine (検索対象を一本化)
+                hymns = hymnsDai.concat(hymnsSup).sort((a, b) => {
+                    return String(a.id).localeCompare(String(b.id), 'en', { numeric: true });
+                });
+
+                chineseHymns = chineseData;
+                renderHymnList();
+                // 保存された訳本表示設定を読み込む
+                loadTranslationSettings();
+                // Initialize primary language button
+                document.getElementById('langJapanese').classList.toggle('active', primaryLanguage === 'japanese');
+                document.getElementById('langChinese').classList.toggle('active', primaryLanguage === 'chinese');
+                document.getElementById('langEnglish').classList.toggle('active', primaryLanguage === 'english');
+                if (hymns.length > 0) {
+                    loadHymn(0);
+                }
+            } catch (error) {
+                console.error('Error loading hymns:', error);
+                document.getElementById('content').innerHTML = '<p>データの読み込みに失敗しました。オフラインの場合は、一度オンラインでアクセスしてキャッシュを作成してください。</p>';
+            }
+        }
+
+        loadHymnsData();
+
+        function searchInHymn(hymn, query) {
+            // Search in ID and title
+            if (hymn.id.toLowerCase().includes(query) || 
+                hymn.title.toLowerCase().includes(query)) {
+                return true;
+            }
+            
+            // Search in utayaku lyrics
+            if (hymn.utayaku) {
+                for (let stanza of hymn.utayaku) {
+                for (let line of stanza.lines) {
+                    if (line.toLowerCase().includes(query)) {
+                        return true;
+                        }
+                    }
+                }
+            }
+            
+            // Search in zennyaku lyrics
+            if (hymn.zennyaku) {
+                for (let stanza of hymn.zennyaku) {
+                    for (let line of stanza.lines) {
+                        if (line.toLowerCase().includes(query)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            
+            return false;
+        }
+
+        function getFirstLine(hymn) {
+            if (hymn.utayaku && hymn.utayaku.length > 0 && 
+                hymn.utayaku[0].lines && hymn.utayaku[0].lines.length > 0) {
+                return hymn.utayaku[0].lines[0];
+            }
+            return '';
+        }
+
+        function renderHymnList() {
+            const list = document.getElementById('hymnList');
+            list.innerHTML = '';
+            
+            hymns.forEach((hymn, index) => {
+                const li = document.createElement('li');
+                
+                const a = document.createElement('a');
+                a.href = '#';
+                a.className = 'hymn-link';
+                a.onclick = (e) => {
+                    e.preventDefault();
+                    loadHymn(index);
+                };
+                
+                const title = document.createElement('div');
+                title.textContent = `${hymn.id}: ${hymn.title}`;
+                
+                const preview = document.createElement('div');
+                preview.className = 'hymn-link-preview';
+                preview.textContent = getFirstLine(hymn);
+                
+                a.appendChild(title);
+                a.appendChild(preview);
+                li.appendChild(a);
+                list.appendChild(li);
+            });
+
+            // Search functionality with debounce
+            let searchTimeout;
+            const searchInput = document.getElementById('search');
+            
+            // EnterキーまたはEscapeキーでフォーカスを外す
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === 'Escape') {
+                    e.preventDefault();
+                    searchInput.blur();
+                }
+            });
+            
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase().trim();
+                
+                // Clear previous timeout
+                clearTimeout(searchTimeout);
+                
+                // Filter visible items
+                let visibleIndices = [];
+                Array.from(list.children).forEach((li, index) => {
+                    const hymn = hymns[index];
+                    const matches = query === '' || searchInHymn(hymn, query);
+                    li.style.display = matches ? 'block' : 'none';
+                    if (matches) {
+                        visibleIndices.push(index);
+                    }
+                });
+                
+                // Load first visible hymn after delay
+                if (query !== '' && visibleIndices.length > 0) {
+                    searchTimeout = setTimeout(() => {
+                        loadHymn(visibleIndices[0]);
+                    }, 300); // 300ms delay
+                } else if (query === '') {
+                    // If search is cleared, don't change the current hymn
+                }
+            });
+        }
+
+        function renderStanza(stanza, type = 'utayaku', isPrimary = false) {
+            const stanzaContent = document.createElement('div');
+            
+            // 訳本別のクラスを追加
+            if (type === 'zennyaku') {
+                stanzaContent.className = 'stanza-zennyaku';
+            } else if (type === 'chinese') {
+                stanzaContent.className = 'stanza-chinese';
+            } else if (type === 'english') {
+                stanzaContent.className = 'stanza-english';
+            } else {
+                stanzaContent.className = 'stanza-utayaku';
+            }
+            
+            // 主要言語か付随言語かでクラスを追加
+            if (isPrimary) {
+                stanzaContent.classList.add('stanza-primary');
+            } else {
+                stanzaContent.classList.add('stanza-secondary');
+            }
+            
+            const numberDiv = document.createElement('div');
+            numberDiv.className = 'stanza-number';
+            const stanzaNo = (stanza && (stanza.stanza ?? stanza.number));
+            // コーラスの場合は"復"と表示
+            if (stanzaNo === 'chorus') {
+                numberDiv.textContent = '復';
+            } else {
+                numberDiv.textContent = typeof stanzaNo === 'number'
+                    ? `${stanzaNo}`
+                    : stanzaNo;
+            }
+            stanzaContent.appendChild(numberDiv);
+            
+            const linesDiv = document.createElement('div');
+            linesDiv.className = 'stanza-lines';
+            
+            // 中国語の場合は2行ずつ結合（デスクトップ表示時、または縦並びレイアウト時）
+            const isVerticalLayout = document.body.classList.contains('vertical-layout');
+            if (type === 'chinese' && (window.innerWidth > 768 || isVerticalLayout)) {
+                const processedLines = [];
+                for (let i = 0; i < stanza.lines.length; i += 2) {
+                    if (i + 1 < stanza.lines.length) {
+                        // 2行を結合
+                        const line1 = stanza.lines[i];
+                        const line2 = stanza.lines[i + 1];
+                        
+                        // 句読点をチェック（、，。！？）
+                        const hasPunctuation = /[、，。！？]$/.test(line1);
+                        
+                        // 句読点がない場合は全角スペースを挟む
+                        const combinedLine = hasPunctuation ? line1 + line2 : line1 + '　' + line2;
+                        processedLines.push({
+                            text: combinedLine,
+                            originalLines: [line1, line2],
+                            isCombined: true
+                        });
+                    } else {
+                        // 最後の1行だけの場合
+                        processedLines.push({
+                            text: stanza.lines[i],
+                            originalLines: [stanza.lines[i]],
+                            isCombined: false
+                        });
+                    }
+                }
+                
+                // 結合した行を追加（後で折り返しチェックを行うため、データ属性を保存）
+                processedLines.forEach((lineData, index) => {
+                    const lineDiv = document.createElement('div');
+                    lineDiv.className = 'stanza-line';
+                    lineDiv.textContent = lineData.text;
+                    if (lineData.isCombined) {
+                        lineDiv.setAttribute('data-combined', 'true');
+                        lineDiv.setAttribute('data-original-line1', lineData.originalLines[0]);
+                        lineDiv.setAttribute('data-original-line2', lineData.originalLines[1]);
+                    }
+                    linesDiv.appendChild(lineDiv);
+                });
+                
+                // 結合した行にマーカーを付ける
+                linesDiv.setAttribute('data-chinese-combined', 'true');
+            } else {
+                // 通常の表示（モバイルまたは中国語以外）
+                stanza.lines.forEach(line => {
+                    const lineDiv = document.createElement('div');
+                    lineDiv.className = 'stanza-line';
+                    lineDiv.textContent = line;
+                    linesDiv.appendChild(lineDiv);
+                });
+            }
+            
+            stanzaContent.appendChild(linesDiv);
+            
+            return stanzaContent;
+        }
+
+        function loadHymn(index) {
+            if (index < 0 || index >= hymns.length) return;
+            
+            currentHymnIndex = index;
+            const hymn = hymns[index];
+
+            // Update header
+            document.getElementById('hymnNumber').textContent = hymn.id;
+            document.getElementById('hymnTitle').textContent = hymn.title;
+
+            // Update stanzas
+            const stanzasDiv = document.getElementById('hymnStanzas');
+            stanzasDiv.innerHTML = '';
+            
+            const utayakuStanzas = hymn.utayaku || [];
+            const zennyakuStanzas = hymn.zennyaku || [];
+            
+            // Find Chinese hymn with same number (補充本(JS*)は対象外)
+            const isSupplement = typeof hymn.id === 'string' && hymn.id.startsWith('JS');
+            const chineseHymn = isSupplement ? null : chineseHymns.find(ch => ch.number === hymn.number);
+            const chineseStanzas = chineseHymn ? (chineseHymn.lyrics || []) : [];
+            
+            // Get max number of stanzas
+            const maxStanzas = Math.max(utayakuStanzas.length, zennyakuStanzas.length, chineseStanzas.length);
+            
+            for (let i = 0; i < maxStanzas; i++) {
+                const stanzaDiv = document.createElement('div');
+                stanzaDiv.className = 'stanza';
+                
+                const stanzaWrapper = document.createElement('div');
+                stanzaWrapper.className = 'stanza-wrapper';
+                
+                // 主要言語に応じて順序を決定
+                const primaryContent = [];
+                const secondaryContent = [];
+                
+                // 空のプレースホルダーを作成する関数
+                const createPlaceholder = (type, isPrimary) => {
+                    const placeholder = document.createElement('div');
+                    placeholder.className = `stanza-${type} ${isPrimary ? 'stanza-primary' : 'stanza-secondary'} stanza-placeholder`;
+                    return placeholder;
+                };
+                
+                // 主要言語が日本語の場合
+                if (primaryLanguage === 'japanese') {
+                    if (showUtayaku) {
+                        if (i < utayakuStanzas.length) {
+                            primaryContent.push(renderStanza(utayakuStanzas[i], 'utayaku', true));
+                        } else {
+                            primaryContent.push(createPlaceholder('utayaku', true));
+                        }
+                    }
+                    if (showZennyaku) {
+                        if (i < zennyakuStanzas.length) {
+                            secondaryContent.push(renderStanza(zennyakuStanzas[i], 'zennyaku', false));
+                        } else {
+                            secondaryContent.push(createPlaceholder('zennyaku', false));
+                        }
+                    }
+                    if (showChinese) {
+                        if (i < chineseStanzas.length) {
+                            secondaryContent.push(renderStanza(chineseStanzas[i], 'chinese', false));
+                        } else {
+                            secondaryContent.push(createPlaceholder('chinese', false));
+                        }
+                    }
+                }
+                // 主要言語が中国語の場合
+                else if (primaryLanguage === 'chinese') {
+                    if (showChinese) {
+                        if (i < chineseStanzas.length) {
+                            primaryContent.push(renderStanza(chineseStanzas[i], 'chinese', true));
+                        } else {
+                            primaryContent.push(createPlaceholder('chinese', true));
+                        }
+                    }
+                    if (showUtayaku) {
+                        if (i < utayakuStanzas.length) {
+                            secondaryContent.push(renderStanza(utayakuStanzas[i], 'utayaku', false));
+                        } else {
+                            secondaryContent.push(createPlaceholder('utayaku', false));
+                        }
+                    }
+                    if (showZennyaku) {
+                        if (i < zennyakuStanzas.length) {
+                            secondaryContent.push(renderStanza(zennyakuStanzas[i], 'zennyaku', false));
+                        } else {
+                            secondaryContent.push(createPlaceholder('zennyaku', false));
+                        }
+                    }
+                }
+                // 主要言語が英語の場合（将来の実装）
+                else if (primaryLanguage === 'english') {
+                    // 英語はまだ実装されていないので、日本語を表示
+                    if (showUtayaku) {
+                        if (i < utayakuStanzas.length) {
+                            primaryContent.push(renderStanza(utayakuStanzas[i], 'utayaku', true));
+                        } else {
+                            primaryContent.push(createPlaceholder('utayaku', true));
+                        }
+                    }
+                    if (showZennyaku) {
+                        if (i < zennyakuStanzas.length) {
+                            secondaryContent.push(renderStanza(zennyakuStanzas[i], 'zennyaku', false));
+                        } else {
+                            secondaryContent.push(createPlaceholder('zennyaku', false));
+                        }
+                    }
+                    if (showChinese) {
+                        if (i < chineseStanzas.length) {
+                            secondaryContent.push(renderStanza(chineseStanzas[i], 'chinese', false));
+                        } else {
+                            secondaryContent.push(createPlaceholder('chinese', false));
+                        }
+                    }
+                }
+                
+                // 主要言語を最初に追加
+                primaryContent.forEach(content => stanzaWrapper.appendChild(content));
+                // その他の言語を追加
+                secondaryContent.forEach(content => stanzaWrapper.appendChild(content));
+                
+                stanzaDiv.appendChild(stanzaWrapper);
+                stanzasDiv.appendChild(stanzaDiv);
+            }
+            
+            // 横並び時は最適化前に非表示にする
+            const isHorizontal = document.body.classList.contains('is-horizontal') || 
+                                 document.body.classList.contains('horizontal-layout');
+            if (isHorizontal) {
+                stanzasDiv.style.visibility = 'hidden';
+            }
+
+            // 各スタンザの幅を調整（DOMレンダリング後に実行）
+            setTimeout(() => {
+                adjustStanzaWidths();
+                checkChineseCombinedLines();
+                
+                // 横並び時は余白最適化してから表示
+                if (isHorizontal) {
+                    optimizeTranslationWidths();
+                    stanzasDiv.style.visibility = 'visible';
+                }
+            }, 50);
+
+            // ループナビゲーションのため、ボタンは常に有効
+
+            // Update active link
+            document.querySelectorAll('.hymn-link').forEach((link, i) => {
+                link.classList.toggle('active', i === index);
+            });
+
+            // Scroll to top
+            document.getElementById('content').scrollTop = 0;
+        }
+
+        // 中国語の結合された行の折り返しをチェック
+        function checkChineseCombinedLines() {
+            // モバイル表示（自動レイアウト）の場合はチェックしない
+            const isAutoLayout = document.body.classList.contains('auto-layout');
+            if (isAutoLayout && window.innerWidth <= 768) {
+                return;
+            }
+
+            const chineseStanzas = document.querySelectorAll('.stanza-chinese .stanza-lines[data-chinese-combined="true"]');
+            chineseStanzas.forEach(linesDiv => {
+                const lines = linesDiv.querySelectorAll('.stanza-line[data-combined="true"]');
+                
+                const isVerticalLayout = document.body.classList.contains('vertical-layout');
+                const isHorizontal = document.body.classList.contains('is-horizontal') || 
+                                    document.body.classList.contains('horizontal-layout');
+                
+                let maxLineWidth;
+                
+                if (isVerticalLayout) {
+                    // 縦並びの時は、stanza-chineseの幅を直接使用
+                    const stanzaChinese = linesDiv.closest('.stanza-chinese');
+                    if (!stanzaChinese) return;
+                    
+                    const stanzaNumber = linesDiv.closest('.stanza-content')?.querySelector('.stanza-number');
+                    const numberWidth = stanzaNumber ? stanzaNumber.offsetWidth + 8 : 0; // 8 = gap
+                    const availableWidth = stanzaChinese.clientWidth;
+                    maxLineWidth = availableWidth - numberWidth - 10; // 10 = 余裕
+                } else if (isHorizontal) {
+                    // 横並びの時は、stanza-wrapperの幅から計算
+                    const stanzaWrapper = linesDiv.closest('.stanza-wrapper');
+                    if (!stanzaWrapper) return;
+                    
+                    // 表示されている訳本の数をカウント
+                    const visibleStanzas = Array.from(stanzaWrapper.children).filter(
+                        child => child.offsetParent !== null
+                    );
+                    const visibleCount = visibleStanzas.length || 1;
+                    
+                    // gap分を引いて各訳本の利用可能幅を計算
+                    const wrapperWidth = stanzaWrapper.clientWidth;
+                    const gapTotal = 16 * (visibleCount - 1);
+                    const availableWidth = (wrapperWidth - gapTotal) / visibleCount;
+                    
+                    // 節番号とgapの幅を引く
+                    const stanzaNumber = linesDiv.closest('.stanza-content')?.querySelector('.stanza-number');
+                    const numberWidth = stanzaNumber ? stanzaNumber.offsetWidth + 8 : 0; // 8 = gap
+                    maxLineWidth = availableWidth - numberWidth - 10; // 10 = 余裕
+                } else {
+                    // その他の場合は処理しない
+                    return;
+                }
+                
+                lines.forEach(line => {
+                    // 折り返しなしの幅を測定
+                    const originalWhiteSpace = line.style.whiteSpace;
+                    line.style.whiteSpace = 'nowrap';
+                    const lineWidth = line.scrollWidth;
+                    line.style.whiteSpace = originalWhiteSpace;
+                    
+                    if (lineWidth > maxLineWidth && maxLineWidth > 0) {
+                        // 折り返しが発生する場合は元の2行に戻す
+                        const originalLine1 = line.getAttribute('data-original-line1');
+                        const originalLine2 = line.getAttribute('data-original-line2');
+                        
+                        if (originalLine1 && originalLine2) {
+                            // 現在の行を2行に分割
+                            const line1Div = document.createElement('div');
+                            line1Div.className = 'stanza-line';
+                            line1Div.textContent = originalLine1;
+                            
+                            const line2Div = document.createElement('div');
+                            line2Div.className = 'stanza-line';
+                            line2Div.textContent = originalLine2;
+                            
+                            // 元の行を置き換え
+                            line.parentNode.insertBefore(line1Div, line);
+                            line.parentNode.insertBefore(line2Div, line);
+                            line.remove();
+                        }
+                    }
+                });
+            });
+        }
+
+        // 各スタンザの幅を調整（縦レイアウト用に簡略化）
+        function adjustStanzaWidths() {
+            // 縦レイアウトでは特別な調整は不要
+                return;
+            }
+
+        // 訳本単位で余白を最適化
+        function optimizeTranslationWidths() {
+            // 横並びでない場合は何もしない
+            if (!document.body.classList.contains('is-horizontal') && 
+                !document.body.classList.contains('horizontal-layout')) {
+                return;
+            }
+
+            const translationTypes = ['stanza-utayaku', 'stanza-zennyaku', 'stanza-chinese', 'stanza-english'];
+            const neededWidths = {};
+            const visibleTypes = [];
+
+            // コンテナの幅を先に取得（リセット前に）
+            const firstWrapper = document.querySelector('.stanza-wrapper');
+            if (!firstWrapper) return;
+            const containerWidth = firstWrapper.clientWidth;
+            if (containerWidth <= 0) return;
+
+            // 各訳本の必要幅を測定（折り返しなしで必要な幅）
+            translationTypes.forEach(type => {
+                const stanzas = document.querySelectorAll(`.${type}`);
+                if (stanzas.length === 0) return;
+
+                let maxStanzaWidth = 0;
+                let isVisible = false;
+
+                stanzas.forEach(stanza => {
+                    if (stanza.offsetParent === null) return;
+                    isVisible = true;
+
+                    // 節番号の幅を取得
+                    const stanzaNumber = stanza.querySelector('.stanza-number');
+                    const numberWidth = stanzaNumber ? stanzaNumber.offsetWidth : 0;
+                    const gap = 8; // gap between number and lines
+
+                    // 行の最大幅を取得
+                    let maxLineWidth = 0;
+                    const lines = stanza.querySelectorAll('.stanza-line');
+                    lines.forEach(line => {
+                        const originalWhiteSpace = line.style.whiteSpace;
+                        line.style.whiteSpace = 'nowrap';
+                        const lineWidth = line.scrollWidth;
+                        line.style.whiteSpace = originalWhiteSpace;
+                        maxLineWidth = Math.max(maxLineWidth, lineWidth);
+                    });
+
+                    // 節全体の必要幅 = 節番号 + gap + 行の最大幅 + 最小余裕
+                    const stanzaWidth = numberWidth + gap + maxLineWidth + 2;
+                    maxStanzaWidth = Math.max(maxStanzaWidth, stanzaWidth);
+                });
+
+                if (isVisible && maxStanzaWidth > 0) {
+                    neededWidths[type] = maxStanzaWidth;
+                    visibleTypes.push(type);
+                }
+            });
+
+            if (visibleTypes.length <= 1) return;
+            
+            // gap分を引く（16px * (訳本数-1)）
+            const gapTotal = 16 * (visibleTypes.length - 1);
+            const availableWidth = containerWidth - gapTotal;
+
+            // 必要幅の合計
+            const totalNeeded = visibleTypes.reduce((sum, type) => sum + neededWidths[type], 0);
+            
+            const stanzaWrappers = document.querySelectorAll('.stanza-wrapper');
+
+            if (totalNeeded <= availableWidth) {
+                // 余裕がある場合：必要幅のみ確保（余白は最小限に）
+                // 各訳本には必要幅 + 最小限の余裕(2px)のみ
+                const minBuffer = 2;
+                const totalWithBuffer = totalNeeded + (minBuffer * visibleTypes.length);
+
+                // 残りの余白は最も幅が必要な訳本に優先的に配分
+                const remainingSurplus = availableWidth - totalWithBuffer;
+                
+                // 必要幅で降順ソート（幅が必要な訳本を特定）
+                const sortedTypes = [...visibleTypes].sort((a, b) => neededWidths[b] - neededWidths[a]);
+                
+                // 余白配分: 必要幅に比例して配分（より多く必要な訳本により多くの余白）
+                const extraWidths = {};
+                if (remainingSurplus > 0) {
+                    sortedTypes.forEach(type => {
+                        const ratio = neededWidths[type] / totalNeeded;
+                        extraWidths[type] = remainingSurplus * ratio;
+                    });
+                } else {
+                    sortedTypes.forEach(type => {
+                        extraWidths[type] = 0;
+                    });
+                }
+
+                stanzaWrappers.forEach(wrapper => {
+                    visibleTypes.forEach(type => {
+                        const stanza = wrapper.querySelector(`.${type}`);
+                        if (stanza && stanza.offsetParent !== null) {
+                            const targetWidth = neededWidths[type] + minBuffer + (extraWidths[type] || 0);
+                            stanza.style.flex = `0 0 ${targetWidth}px`;
+                        }
+                    });
+                });
+            } else {
+                // 余裕がない場合：利用可能幅を必要幅の比率で配分
+                stanzaWrappers.forEach(wrapper => {
+                    visibleTypes.forEach(type => {
+                        const stanza = wrapper.querySelector(`.${type}`);
+                        if (stanza && stanza.offsetParent !== null) {
+                            const ratio = neededWidths[type] / totalNeeded;
+                            const targetWidth = availableWidth * ratio;
+                            stanza.style.flex = `0 0 ${targetWidth}px`;
+                    }
+                });
+            });
+            }
+            
+        }
+
+        function toggleZennyaku() {
+            showZennyaku = !showZennyaku;
+            const toggleButton = document.getElementById('zennyakuToggle');
+            toggleButton.classList.toggle('active', showZennyaku);
+            saveTranslationSettings();
+            loadHymn(currentHymnIndex);
+        }
+
+        function toggleChinese() {
+            showChinese = !showChinese;
+            const toggleButton = document.getElementById('chineseToggle');
+            toggleButton.classList.toggle('active', showChinese);
+            saveTranslationSettings();
+            loadHymn(currentHymnIndex);
+        }
+
+        function toggleUtayaku() {
+            showUtayaku = !showUtayaku;
+            const toggleButton = document.getElementById('utayakuToggle');
+            toggleButton.classList.toggle('active', showUtayaku);
+            saveTranslationSettings();
+            loadHymn(currentHymnIndex);
+        }
+        
+        // 訳本表示設定を保存
+        function saveTranslationSettings() {
+            localStorage.setItem('translationSettings', JSON.stringify({
+                showUtayaku: showUtayaku,
+                showZennyaku: showZennyaku,
+                showChinese: showChinese
+            }));
+        }
+        
+        // 訳本表示設定を読み込む
+        function loadTranslationSettings() {
+            const saved = localStorage.getItem('translationSettings');
+            if (saved) {
+                const settings = JSON.parse(saved);
+                showUtayaku = settings.showUtayaku !== undefined ? settings.showUtayaku : true;
+                showZennyaku = settings.showZennyaku !== undefined ? settings.showZennyaku : true;
+                showChinese = settings.showChinese !== undefined ? settings.showChinese : true;
+            }
+            // ボタンの状態を更新
+            document.getElementById('utayakuToggle')?.classList.toggle('active', showUtayaku);
+            document.getElementById('zennyakuToggle')?.classList.toggle('active', showZennyaku);
+            document.getElementById('chineseToggle')?.classList.toggle('active', showChinese);
+        }
+
+        function toggleEnglish() {
+            // Englishはまだ実装されていないため、何もしない
+            alert('English translation is not yet available.');
+        }
+
+        function navigateHymn(direction) {
+            let newIndex = currentHymnIndex + direction;
+            // ループナビゲーション：最初から前へ→最後へ、最後から次へ→最初へ
+            if (newIndex < 0) {
+                newIndex = hymns.length - 1;
+            } else if (newIndex >= hymns.length) {
+                newIndex = 0;
+            }
+                loadHymn(newIndex);
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            // 入力フィールドにフォーカスがある場合はショートカットを無効化
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                return;
+            }
+            
+            // 修飾キー（Ctrl、Alt、Shift、Meta）が押されている場合はショートカットを無効化
+            if (e.ctrlKey || e.altKey || e.shiftKey || e.metaKey) {
+                return;
+            }
+            
+            if (e.key === 'ArrowLeft') {
+                navigateHymn(-1);
+            } else if (e.key === 'ArrowRight') {
+                navigateHymn(1);
+            } else if (e.key === 'r' || e.key === 'R') {
+                // Toggle sidebar with R key
+                e.preventDefault();
+                toggleSidebar();
+            } else if (e.key === 'z' || e.key === 'Z') {
+                // 全訳トグル
+                e.preventDefault();
+                toggleZennyaku();
+            } else if (e.key === 'c' || e.key === 'C') {
+                // 中文トグル
+                e.preventDefault();
+                toggleChinese();
+            } else if (e.key === 'j' || e.key === 'J') {
+                // 日本語歌訳トグル
+                e.preventDefault();
+                toggleUtayaku();
+            } else if (e.key === 't' || e.key === 'T') {
+                // ツールバートグル
+                e.preventDefault();
+                toggleToolbar();
+            } else if (e.key === 'f' || e.key === 'F') {
+                // フォント設定メニューの開閉
+                e.preventDefault();
+                toggleFontSettings();
+            } else if (e.key === 'l' || e.key === 'L') {
+                // 言語メニュートグル
+                e.preventDefault();
+                toggleLanguageMenu();
+            } else if (e.key === 'o' || e.key === 'O') {
+                // 余白最適化
+                e.preventDefault();
+                optimizeTranslationWidths();
+            } else if (e.key === 's' || e.key === 'S') {
+                // 検索フィールドにフォーカス
+                e.preventDefault();
+                const searchInput = document.getElementById('search');
+                if (searchInput) {
+                    searchInput.focus();
+                }
+            } else if (e.key === 'ArrowUp') {
+                // フォント拡大
+                e.preventDefault();
+                const newSize = Math.min(2.5, fontSettings.fontSize + 0.05);
+                setFontSize(newSize);
+                document.getElementById('fontSize').value = newSize;
+            } else if (e.key === 'ArrowDown') {
+                // フォント縮小
+                e.preventDefault();
+                const newSize = Math.max(0.8, fontSettings.fontSize - 0.05);
+                setFontSize(newSize);
+                document.getElementById('fontSize').value = newSize;
+            } else if (e.key === 'w' || e.key === 'W') {
+                // ウェイト切り替え（細→中→太→細...）
+                e.preventDefault();
+                let newWeight;
+                if (fontSettings.weight === 'light') {
+                    newWeight = 'regular';
+                } else if (fontSettings.weight === 'regular') {
+                    newWeight = 'medium';
+                } else {
+                    newWeight = 'light';
+                }
+                setFontWeight(newWeight);
+            } else if (e.key === 'i' || e.key === 'I') {
+                // ショートカット情報を表示
+                e.preventDefault();
+                toggleInfoPopup();
+            }
+        });
+
+        // Toggle sidebar function
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const footerToggle = document.getElementById('footerToggle');
+            
+            sidebar.classList.toggle('collapsed');
+            
+            // フッターのトグルボタンの状態を更新
+            if (footerToggle) {
+                footerToggle.classList.toggle('collapsed', sidebar.classList.contains('collapsed'));
+                const title = sidebar.classList.contains('collapsed') ? '検索結果を開く (R)' : '検索結果を閉じる (R)';
+                footerToggle.title = title;
+            }
+        }
+
+        // ツールバートグル
+        function toggleToolbar() {
+            const body = document.body;
+            const icon = document.getElementById('toolbarIcon');
+            const button = document.getElementById('toolbarToggle');
+            
+            body.classList.toggle('fullscreen-mode');
+            
+            // アイコンとツールチップを変更
+            if (body.classList.contains('fullscreen-mode')) {
+                icon.classList.add('toolbar-icon-hidden'); // 斜め線を追加
+                button.title = 'ツールバー表示 (T)';
+            } else {
+                icon.classList.remove('toolbar-icon-hidden'); // 斜め線を削除
+                button.title = 'ツールバー非表示 (T)';
+            }
+        }
+
+        // フォント設定の管理
+        let fontSettings = {
+            font: 'hei', // hei, xi, ming
+            lineHeight: 1.6,
+            letterSpacing: 0, // -0.05 - 0.2
+            margin: 12,
+            fontSize: 1.1, // 0.8 - 2.5
+            weight: 'regular', // light, regular, medium
+            opacity: 1.0, // メニューの透明度
+            layout: 'auto', // auto, vertical, horizontal（autoはレスポンシブ）
+            contentPadding: 0 // 左右余白の増やす量（既定12px + この値）
+        };
+
+        // localStorageから設定を読み込む
+        function loadFontSettings() {
+            const saved = localStorage.getItem('fontSettings');
+            if (saved) {
+                fontSettings = JSON.parse(saved);
+                applyFontSettings();
+            } else {
+                applyFontSettings();
+            }
+        }
+
+        // 設定を適用
+        function applyFontSettings() {
+            const root = document.documentElement;
+            
+            // フォント設定
+            if (fontSettings.font === 'hei') {
+                // ゴシック体 = GlowSans Normal + システムゴシック
+                root.style.setProperty('--font-family', "'GlowSans Normal', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Yu Gothic', 'YuGothic', Meiryo, 'MS Gothic', sans-serif");
+            } else if (fontSettings.font === 'xi') {
+                // 細長体 = GlowSans Compressed + システムゴシック
+                root.style.setProperty('--font-family', "'GlowSans Compressed', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Yu Gothic', 'YuGothic', Meiryo, 'MS Gothic', sans-serif");
+            } else if (fontSettings.font === 'ming') {
+                // 明朝体
+                root.style.setProperty('--font-family', "'Hiragino Mincho ProN', 'Hiragino Mincho Pro', 'Yu Mincho', 'YuMincho', 'MS Mincho', serif");
+            }
+            
+            // ウェイト設定
+            if (fontSettings.weight === 'light') {
+                root.style.setProperty('--font-weight', '300');
+            } else if (fontSettings.weight === 'regular') {
+                root.style.setProperty('--font-weight', '400');
+            } else if (fontSettings.weight === 'medium') {
+                root.style.setProperty('--font-weight', '500');
+            }
+            
+            // フォントサイズ設定
+            root.style.setProperty('--font-size', fontSettings.fontSize + 'em');
+            
+            // 行間・字間設定
+            root.style.setProperty('--stanza-line-height', fontSettings.lineHeight);
+            root.style.setProperty('--letter-spacing', fontSettings.letterSpacing + 'em');
+            root.style.setProperty('--stanza-margin-bottom', fontSettings.margin + 'px');
+            root.style.setProperty('--menu-opacity', fontSettings.opacity);
+            
+            // 左右余白設定（既定12px + 増やす量）
+            const contentDiv = document.querySelector('.content');
+            if (contentDiv) {
+                const basePadding = 12;
+                const totalPadding = basePadding + (fontSettings.contentPadding || 0);
+                // モバイルの場合は10pxを基準にする
+                if (window.innerWidth <= 768) {
+                    const mobileBasePadding = 10;
+                    const mobileTotalPadding = mobileBasePadding + (fontSettings.contentPadding || 0);
+                    contentDiv.style.paddingLeft = mobileTotalPadding + 'px';
+                    contentDiv.style.paddingRight = mobileTotalPadding + 'px';
+                } else {
+                    contentDiv.style.paddingLeft = totalPadding + 'px';
+                    contentDiv.style.paddingRight = totalPadding + 'px';
+                }
+            }
+            
+            // レイアウト設定
+            document.body.classList.remove('horizontal-layout', 'vertical-layout', 'auto-layout', 'is-horizontal');
+            if (fontSettings.layout === 'horizontal') {
+                document.body.classList.add('horizontal-layout', 'is-horizontal');
+            } else if (fontSettings.layout === 'vertical') {
+                document.body.classList.add('vertical-layout');
+            } else {
+                document.body.classList.add('auto-layout');
+                // 自動レイアウト: 画面幅に応じて横並びクラスを追加
+                if (window.innerWidth > 768) {
+                    document.body.classList.add('is-horizontal');
+                }
+            }
+            
+            // UI更新
+            updateFontSettingsUI();
+            
+            // 横並び時は自動で余白最適化（レイアウト変更後）
+            setTimeout(() => {
+                if (document.body.classList.contains('is-horizontal') || 
+                    document.body.classList.contains('horizontal-layout')) {
+                    optimizeTranslationWidths();
+                }
+            }, 150);
+        }
+
+        // UI更新
+        function updateFontSettingsUI() {
+            // フォント選択
+            document.querySelectorAll('.font-option[data-font]').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.font === fontSettings.font);
+            });
+            
+            // ウェイト選択
+            document.querySelectorAll('.font-option[data-weight]').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.weight === fontSettings.weight);
+            });
+            
+            // 透明度選択
+            document.querySelectorAll('.font-option[data-opacity]').forEach(btn => {
+                btn.classList.toggle('active', parseFloat(btn.dataset.opacity) === fontSettings.opacity);
+            });
+            
+            // レイアウト選択
+            document.querySelectorAll('.font-option[data-layout]').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.layout === fontSettings.layout);
+            });
+            
+            // スライダー値
+            const lineHeightSlider = document.getElementById('stanzaLineHeight');
+            const letterSpacingSlider = document.getElementById('letterSpacing');
+            const marginSlider = document.getElementById('stanzaMargin');
+            const contentPaddingSlider = document.getElementById('contentPadding');
+            const fontSizeSlider = document.getElementById('fontSize');
+            if (lineHeightSlider) {
+                lineHeightSlider.value = fontSettings.lineHeight;
+                const lineHeightValue = document.getElementById('stanzaLineHeightValue');
+                if (lineHeightValue) lineHeightValue.textContent = fontSettings.lineHeight;
+            }
+            if (letterSpacingSlider) {
+                letterSpacingSlider.value = fontSettings.letterSpacing || 0;
+                const letterSpacingValue = document.getElementById('letterSpacingValue');
+                if (letterSpacingValue) letterSpacingValue.textContent = fontSettings.letterSpacing || 0;
+            }
+            if (marginSlider) {
+                marginSlider.value = fontSettings.margin;
+                const marginValue = document.getElementById('stanzaMarginValue');
+                if (marginValue) marginValue.textContent = fontSettings.margin + 'px';
+            }
+            if (contentPaddingSlider) {
+                contentPaddingSlider.value = fontSettings.contentPadding || 0;
+                const contentPaddingValue = document.getElementById('contentPaddingValue');
+                if (contentPaddingValue) contentPaddingValue.textContent = (fontSettings.contentPadding || 0) + 'px';
+            }
+            if (fontSizeSlider) {
+                fontSizeSlider.value = fontSettings.fontSize;
+                const fontSizeValue = document.getElementById('fontSizeValue');
+                if (fontSizeValue) fontSizeValue.textContent = Math.round(fontSettings.fontSize * 100) + '%';
+            }
+        }
+
+        // 設定関数
+        function setFont(font) {
+            fontSettings.font = font;
+            applyFontSettings();
+            saveFontSettings();
+        }
+
+        function setFontWeight(weight) {
+            fontSettings.weight = weight;
+            applyFontSettings();
+            saveFontSettings();
+        }
+
+        function setStanzaLineHeight(value) {
+            fontSettings.lineHeight = parseFloat(value);
+            const valueEl = document.getElementById('stanzaLineHeightValue');
+            if (valueEl) valueEl.textContent = value;
+            applyFontSettings();
+            saveFontSettings();
+        }
+
+        function setLetterSpacing(value) {
+            fontSettings.letterSpacing = parseFloat(value);
+            const valueEl = document.getElementById('letterSpacingValue');
+            if (valueEl) valueEl.textContent = value;
+            applyFontSettings();
+            saveFontSettings();
+            // 字間変更後に余白最適化を再実行
+            setTimeout(() => {
+                optimizeTranslationWidths();
+            }, 50);
+        }
+
+        function setStanzaMargin(value) {
+            fontSettings.margin = parseInt(value);
+            const valueEl = document.getElementById('stanzaMarginValue');
+            if (valueEl) valueEl.textContent = value + 'px';
+            applyFontSettings();
+            saveFontSettings();
+        }
+
+        function setContentPadding(value) {
+            fontSettings.contentPadding = parseInt(value);
+            const valueEl = document.getElementById('contentPaddingValue');
+            if (valueEl) valueEl.textContent = value + 'px';
+            applyFontSettings();
+            saveFontSettings();
+        }
+
+        function setFontSize(value) {
+            fontSettings.fontSize = parseFloat(value);
+            const valueEl = document.getElementById('fontSizeValue');
+            if (valueEl) valueEl.textContent = Math.round(fontSettings.fontSize * 100) + '%';
+            applyFontSettings();
+            saveFontSettings();
+            // フォントサイズ変更後に余白最適化を再実行
+            setTimeout(() => {
+                optimizeTranslationWidths();
+            }, 50);
+        }
+
+        function setOpacity(opacity) {
+            fontSettings.opacity = opacity;
+            applyFontSettings();
+            saveFontSettings();
+        }
+
+        function setLayout(layout) {
+            fontSettings.layout = layout;
+            applyFontSettings();
+            saveFontSettings();
+        }
+
+        // 設定を保存
+        function saveFontSettings() {
+            localStorage.setItem('fontSettings', JSON.stringify(fontSettings));
+        }
+
+        // フォント設定をリセット
+        function resetFontSettings() {
+            fontSettings = {
+                font: 'hei',
+                lineHeight: 1.6,
+                letterSpacing: 0,
+                margin: 12,
+                fontSize: 1.1,
+                weight: 'regular',
+                opacity: 1.0,
+                layout: 'auto',
+                contentPadding: 0
+            };
+            applyFontSettings();
+            saveFontSettings();
+        }
+
+        // キャッシュ（Cache Storage）を削除してリロード
+        async function resetAppCache() {
+            const ok = confirm(
+                'キャッシュを削除して再読み込みします。\\n' +
+                'オフラインの場合、キャッシュ削除後はデータを読めなくなるので注意してください。'
+            );
+            if (!ok) return;
+
+            try {
+                // メニューを閉じる（見た目のため）
+                document.getElementById('fontSettingsMenu')?.classList.remove('show');
+
+                // Cache Storage を全削除（同一origin）
+                if ('caches' in window && caches.keys) {
+                    const names = await caches.keys();
+                    await Promise.all(names.map((n) => caches.delete(n)));
+                }
+
+                // Service Worker を解除（次回ロードで新規取得）
+                if ('serviceWorker' in navigator) {
+                    const regs = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(regs.map((r) => r.unregister()));
+                }
+            } catch (e) {
+                console.error('Failed to reset cache:', e);
+            } finally {
+                location.reload();
+            }
+        }
+
+        // フォント設定メニューの表示/非表示
+        function toggleFontSettings() {
+            const menu = document.getElementById('fontSettingsMenu');
+            const languageMenu = document.getElementById('languageMenu');
+            const infoPopup = document.getElementById('infoPopup');
+            if (menu) {
+                menu.classList.toggle('show');
+            }
+            // 他のメニューが開いていたら閉じる
+            if (languageMenu) {
+                languageMenu.classList.remove('show');
+            }
+            if (infoPopup) {
+                infoPopup.classList.remove('show');
+            }
+        }
+
+        // 言語選択メニューの表示/非表示
+        function toggleLanguageMenu() {
+            const languageMenu = document.getElementById('languageMenu');
+            const fontMenu = document.getElementById('fontSettingsMenu');
+            const infoPopup = document.getElementById('infoPopup');
+            if (languageMenu) {
+                languageMenu.classList.toggle('show');
+            }
+            // 他のメニューが開いていたら閉じる
+            if (fontMenu) {
+                fontMenu.classList.remove('show');
+            }
+            if (infoPopup) {
+                infoPopup.classList.remove('show');
+            }
+        }
+
+        // 主要言語を設定
+        function setPrimaryLanguage(lang) {
+            primaryLanguage = lang;
+            localStorage.setItem('primaryLanguage', lang);
+            
+            // ボタンの状態を更新
+            document.getElementById('langJapanese').classList.toggle('active', lang === 'japanese');
+            document.getElementById('langChinese').classList.toggle('active', lang === 'chinese');
+            document.getElementById('langEnglish').classList.toggle('active', lang === 'english');
+            
+            // 現在の詩歌を再読み込み
+            if (hymns.length > 0) {
+                loadHymn(currentHymnIndex);
+            }
+            
+            // メニューは閉じない
+        }
+
+
+        // ショートカット情報ポップアップ
+        function toggleInfoPopup() {
+            const infoPopup = document.getElementById('infoPopup');
+            const fontMenu = document.getElementById('fontSettingsMenu');
+            const languageMenu = document.getElementById('languageMenu');
+            if (infoPopup) {
+                infoPopup.classList.toggle('show');
+            }
+            // 他のメニューが開いていたら閉じる
+            if (fontMenu) {
+                fontMenu.classList.remove('show');
+            }
+            if (languageMenu) {
+                languageMenu.classList.remove('show');
+            }
+        }
+
+        // メニュー外クリックで閉じる
+        document.addEventListener('click', (e) => {
+            const fontMenu = document.getElementById('fontSettingsMenu');
+            const fontButton = document.getElementById('fontSettingsButton');
+            const languageMenu = document.getElementById('languageMenu');
+            const languageButton = document.getElementById('languageButton');
+            const infoPopup = document.getElementById('infoPopup');
+            const infoButton = document.getElementById('infoButton');
+            
+            if (fontMenu && fontButton && !fontMenu.contains(e.target) && !fontButton.contains(e.target)) {
+                fontMenu.classList.remove('show');
+            }
+            
+            if (languageMenu && languageButton && !languageMenu.contains(e.target) && !languageButton.contains(e.target)) {
+                languageMenu.classList.remove('show');
+            }
+            
+            if (infoPopup && infoButton && !infoPopup.contains(e.target) && !infoButton.contains(e.target)) {
+                infoPopup.classList.remove('show');
+            }
+        });
+
+        // ページ読み込み時に設定を適用
+        loadFontSettings();
+
+        // PWA状態を更新する関数
+        async function updatePWAStatus() {
+            const statusDiv = document.getElementById('pwaStatus');
+            if (!statusDiv) return;
+            
+            if (!('serviceWorker' in navigator)) {
+                statusDiv.textContent = 'Service Worker未対応';
+                statusDiv.style.color = '#dc3545';
+                return;
+            }
+            
+            try {
+                const installed = isInstalled();
+                const registration = await navigator.serviceWorker.getRegistration();
+                
+                if (installed) {
+                    statusDiv.textContent = '✓ インストール済み';
+                    statusDiv.style.color = '#28a745';
+                } else if (registration) {
+                    const cacheNames = await caches.keys();
+                    let totalItems = 0;
+                    for (const cacheName of cacheNames) {
+                        const cache = await caches.open(cacheName);
+                        const keys = await cache.keys();
+                        totalItems += keys.length;
+                    }
+                    statusDiv.textContent = `PWA有効 (${totalItems}項目キャッシュ済み)`;
+                    statusDiv.style.color = '#28a745';
+                } else {
+                    statusDiv.textContent = 'PWA未有効';
+                    statusDiv.style.color = '#ffc107';
+                }
+            } catch (error) {
+                statusDiv.textContent = '状態確認エラー';
+                statusDiv.style.color = '#dc3545';
+            }
+        }
+
+        // PWAを有効化する関数
+        async function enablePWA() {
+            if (!('serviceWorker' in navigator)) {
+                alert('このブラウザはService Workerをサポートしていません。');
+                return;
+            }
+            
+            const button = document.getElementById('enablePWAButton');
+            const originalText = button.textContent;
+            button.disabled = true;
+            button.textContent = '有効化中...';
+            
+            try {
+                // Service Workerを登録
+                const registration = await navigator.serviceWorker.register('./service-worker.js', { scope: './' });
+                console.log('✓ ServiceWorker registration successful:', registration.scope);
+                
+                // キャッシュを作成（Service Workerがインストールされるまで待つ）
+                await new Promise((resolve) => {
+                    if (registration.installing) {
+                        registration.installing.addEventListener('statechange', function() {
+                            if (this.state === 'installed') {
+                                resolve();
+                            }
+                        });
+                    } else if (registration.waiting) {
+                        resolve();
+                    } else {
+                        resolve();
+                    }
+                });
+                
+                // 少し待ってからキャッシュを確認
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // 状態を更新
+                await updatePWAStatus();
+                
+                button.textContent = '✓ 有効化完了';
+                button.style.background = '#28a745';
+                button.style.color = 'white';
+                
+                setTimeout(() => {
+                    button.disabled = false;
+                    button.textContent = originalText;
+                    button.style.background = '';
+                    button.style.color = '';
+                }, 2000);
+                
+                // インストールプロンプトが利用可能な場合は表示
+                if (deferredPrompt && shouldShowInstallPrompt()) {
+                    showInstallButton();
+                } else if (!deferredPrompt && shouldShowInstallPrompt()) {
+                    // beforeinstallpromptイベントがまだ発生していない場合は、プラットフォーム別案内を表示
+                    showPlatformInstructions();
+                }
+                
+            } catch (error) {
+                console.error('✗ PWA enable failed:', error);
+                alert('PWAの有効化に失敗しました: ' + error.message);
+                button.disabled = false;
+                button.textContent = originalText;
+            }
+        }
+
+        // キャッシュをリセットする関数
+        async function resetCache() {
+            if (!confirm('すべてのキャッシュを削除しますか？オフライン機能が無効になります。')) {
+                return;
+            }
+            
+            const button = document.getElementById('resetCacheButton');
+            const originalText = button.textContent;
+            button.disabled = true;
+            button.textContent = 'リセット中...';
+            
+            try {
+                // Service Workerの登録を解除
+                if ('serviceWorker' in navigator) {
+                    const registration = await navigator.serviceWorker.getRegistration();
+                    if (registration) {
+                        await registration.unregister();
+                        console.log('✓ Service Worker unregistered');
+                    }
+                }
+                
+                // すべてのキャッシュを削除
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    for (const cacheName of cacheNames) {
+                        await caches.delete(cacheName);
+                        console.log(`✓ Deleted cache: ${cacheName}`);
+                    }
+                }
+                
+                // localStorageもクリア（オプション）
+                // localStorage.clear();
+                
+                button.textContent = '✓ リセット完了';
+                button.style.background = '#28a745';
+                
+                // 状態を更新
+                await updatePWAStatus();
+                
+                setTimeout(() => {
+                    alert('キャッシュをリセットしました。ページをリロードします。');
+                    window.location.reload();
+                }, 1000);
+                
+            } catch (error) {
+                console.error('✗ Cache reset failed:', error);
+                alert('キャッシュのリセットに失敗しました: ' + error.message);
+                button.disabled = false;
+                button.textContent = originalText;
+            }
+        }
+
+        // Service Worker登録とキャッシュ状態の確認
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', async () => {
+                try {
+                    const registration = await navigator.serviceWorker.getRegistration();
+                    if (!registration) {
+                        // 自動登録しない（ユーザーがボタンを押すまで待つ）
+                        console.log('Service Worker not registered. User can enable PWA manually.');
+                        await updatePWAStatus();
+                        return;
+                    }
+                    
+                    console.log('✓ ServiceWorker already registered:', registration.scope);
+                    
+                    // キャッシュの状態を確認
+                    if ('caches' in window) {
+                        const cacheNames = await caches.keys();
+                        console.log('Available caches:', cacheNames);
+                        
+                        for (const cacheName of cacheNames) {
+                            const cache = await caches.open(cacheName);
+                            const keys = await cache.keys();
+                            console.log(`Cache "${cacheName}": ${keys.length} items`);
+                        }
+                    }
+                    
+                    // アップデートをチェック
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        console.log('New service worker found, installing...');
+                        newWorker.addEventListener('statechange', () => {
+                            console.log('Service worker state:', newWorker.state);
+                            if (newWorker.state === 'installed') {
+                                if (navigator.serviceWorker.controller) {
+                                    // 新しいService Workerがインストールされた
+                                    console.log('New service worker installed. Reloading to activate...');
+                                    // 自動的にリロードして新しいService Workerを有効化
+                                    window.location.reload();
+                                } else {
+                                    // 初回インストール
+                                    console.log('Service worker installed for the first time.');
+                                }
+                            }
+                        });
+                    });
+                    
+                    // 定期的にService Workerの更新をチェック
+                    setInterval(() => {
+                        registration.update();
+                    }, 60000); // 60秒ごとに更新をチェック
+                    
+                    // 状態を更新
+                    await updatePWAStatus();
+                    
+                } catch (error) {
+                    console.error('✗ ServiceWorker check failed:', error);
+                    await updatePWAStatus();
+                }
+            });
+        } else {
+            console.warn('⚠️ Service Workers are not supported in this browser.');
+            console.warn('Browser:', navigator.userAgent);
+            updatePWAStatus();
+        }
+        
+        // 定期的にPWA状態を更新
+        setInterval(updatePWAStatus, 30000); // 30秒ごと
+        
+        // Service Workerからのメッセージを受信
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.addEventListener('message', (event) => {
+                if (event.data && event.data.type === 'SW_ACTIVATED') {
+                    console.log('Service Worker activated, reloading page...');
+                    // 新しいService Workerがアクティベートされたらページをリロード
+                    window.location.reload();
+                }
+            });
+        }
+
+        // ===== PWAインストールプロンプト機能 =====
+        let deferredPrompt = null;
+
+        // プラットフォーム検出
+        function detectPlatform() {
+            const ua = navigator.userAgent;
+            if (/iPad|iPhone|iPod/.test(ua)) return 'ios';
+            if (/Android/.test(ua)) return 'android';
+            if (/Win|Mac|Linux/.test(ua)) return 'desktop';
+            return 'unknown';
+        }
+
+        // インストール済みかどうかを検出
+        function isInstalled() {
+            return window.matchMedia('(display-mode: standalone)').matches ||
+                   window.navigator.standalone === true;
+        }
+
+        // 案内を表示すべきかどうかを判定
+        function shouldShowInstallPrompt() {
+            // 既にインストール済みの場合は表示しない
+            if (isInstalled()) {
+                return false;
+            }
+
+            // ユーザーが案内を閉じた場合のチェック
+            const dismissed = localStorage.getItem('installPromptDismissed');
+            if (dismissed) {
+                const dismissedTime = parseInt(dismissed, 10);
+                const now = Date.now();
+                const sevenDays = 7 * 24 * 60 * 60 * 1000; // 7日間
+                
+                // 7日経過していない場合は表示しない
+                if (now - dismissedTime < sevenDays) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        // プラットフォーム別の案内メッセージを表示
+        function showPlatformInstructions() {
+            const platform = detectPlatform();
+            const instructionsContainer = document.getElementById('platformInstructions');
+            const instructionsContent = document.getElementById('platformInstructionsContent');
+            
+            if (!instructionsContainer || !instructionsContent) return;
+
+            let instructions = '';
+            
+            switch (platform) {
+                case 'ios':
+                    instructions = `
+                        <strong>📱 iPhone/iPadでの追加方法：</strong><br>
+                        1. Safariの下部にある共有ボタン（□↑）をタップ<br>
+                        2. メニューから「ホーム画面に追加」を選択<br>
+                        3. 名前を確認して「追加」をタップ
+                    `;
+                    break;
+                case 'android':
+                    instructions = `
+                        <strong>📱 Androidでの追加方法：</strong><br>
+                        1. ブラウザのメニュー（⋮）をタップ<br>
+                        2. 「ホーム画面に追加」または「アプリをインストール」を選択<br>
+                        3. 確認ダイアログで「追加」をタップ
+                    `;
+                    break;
+                case 'desktop':
+                    instructions = `
+                        <strong>💻 デスクトップでの追加方法：</strong><br>
+                        1. ブラウザのアドレスバー右側のインストールアイコン（⊕）をクリック<br>
+                        2. または、メニューから「アプリをインストール」を選択
+                    `;
+                    break;
+                default:
+                    instructions = `
+                        <strong>📱 ホーム画面に追加すると、アプリのように使用できます</strong>
+                    `;
+            }
+            
+            instructionsContent.innerHTML = instructions;
+            instructionsContainer.style.display = 'block';
+        }
+
+        // カスタムインストールボタンを表示
+        function showInstallButton() {
+            const container = document.getElementById('installPromptContainer');
+            const button = document.getElementById('installButton');
+            const message = document.getElementById('installPromptMessage');
+            
+            if (container && button && message) {
+                message.textContent = '📱 ホーム画面に追加すると、アプリのように使用できます';
+                button.style.display = 'block';
+                container.style.display = 'block';
+            }
+        }
+
+        // インストールプロンプトを表示
+        async function showInstallPrompt() {
+            if (!deferredPrompt) {
+                // beforeinstallpromptイベントが発生していない場合は、プラットフォーム別案内を表示
+                showPlatformInstructions();
+                return;
+            }
+
+            // プロンプトを表示
+            deferredPrompt.prompt();
+            
+            // ユーザーの選択を待つ
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User response to install prompt: ${outcome}`);
+            
+            // プロンプトを使用済みにする
+            deferredPrompt = null;
+            
+            // ボタンを非表示
+            const button = document.getElementById('installButton');
+            const container = document.getElementById('installPromptContainer');
+            if (button) button.style.display = 'none';
+            if (container) container.style.display = 'none';
+        }
+
+        // 案内を閉じる
+        function dismissInstallPrompt() {
+            const container = document.getElementById('installPromptContainer');
+            const instructions = document.getElementById('platformInstructions');
+            
+            if (container) container.style.display = 'none';
+            if (instructions) instructions.style.display = 'none';
+            
+            // localStorageに閉じた時刻を保存
+            localStorage.setItem('installPromptDismissed', Date.now().toString());
+        }
+
+        // beforeinstallpromptイベントの処理
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('beforeinstallprompt event fired');
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // 案内を表示すべきかチェック
+            if (shouldShowInstallPrompt()) {
+                showInstallButton();
+            }
+        });
+
+        // インストール済みの場合は案内を非表示
+        if (isInstalled()) {
+            const container = document.getElementById('installPromptContainer');
+            const instructions = document.getElementById('platformInstructions');
+            if (container) container.style.display = 'none';
+            if (instructions) instructions.style.display = 'none';
+        } else if (shouldShowInstallPrompt()) {
+            // インストール可能でない場合でも、プラットフォーム別案内を表示
+            // ただし、一定時間後に表示（初回訪問時は即座に表示しない）
+            setTimeout(() => {
+                if (!deferredPrompt && shouldShowInstallPrompt()) {
+                    showPlatformInstructions();
+                }
+            }, 5000); // 5秒後に表示
+        }
+
+        // appinstalledイベント（インストール完了時）
+        window.addEventListener('appinstalled', () => {
+            console.log('PWA was installed');
+            deferredPrompt = null;
+            
+            // 案内を非表示
+            const container = document.getElementById('installPromptContainer');
+            const instructions = document.getElementById('platformInstructions');
+            if (container) container.style.display = 'none';
+            if (instructions) instructions.style.display = 'none';
+        });
+
+        // ウィンドウリサイズ時にスタンザの幅を調整
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                adjustStanzaWidths();
+                // 自動レイアウト時は画面幅に応じてis-horizontalを更新
+                if (fontSettings.layout === 'auto') {
+                    if (window.innerWidth > 768) {
+                        document.body.classList.add('is-horizontal');
+                    } else {
+                        document.body.classList.remove('is-horizontal');
+                    }
+                }
+            }, 250); // 250ms後に実行（デバウンス）
+        });
+    </script>
+</body>
+</html>
+

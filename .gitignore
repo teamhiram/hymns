@@ -1,0 +1,17 @@
+_ARCHIVES/
+_PREP/
+_RAW_DATA/
+audio/
+
+.DS_Store
+
+# Common
+*.log
+__pycache__/
+*.py[cod]
+.python-version
+.venv/
+venv/
+node_modules/
+.idea/
+.vscode/
